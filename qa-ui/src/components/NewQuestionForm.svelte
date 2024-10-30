@@ -1,5 +1,5 @@
 <script>
-    import { userUuid } from "../stores/stores.js";
+    import { userUuid, courseOneQuestions } from "../stores/stores.js";
     let questionText = "";
     let isLoading = false;
 
@@ -27,9 +27,12 @@
             if (!response.ok) {
                 throw new Error("Network response was not ok");
             }
-            // Optionally, you might want to reset the question text after submission
             questionText = "";
-            alert("Question submitted successfully!");
+            const newQuestion = await response.json();
+            courseOneQuestions.update((questions) => [
+                newQuestion,
+                ...questions,
+            ]);
         } catch (error) {
             console.error("Error submitting question:", error);
             alert("There was a problem submitting your question.");
@@ -45,7 +48,11 @@
         bind:value={questionText}
         placeholder="Please enter your question."
     />
-    <button type="submit" disabled={isLoading}>
+    <button
+        type="submit"
+        disabled={isLoading}
+        style="border: 1px solid #000; padding: 8px;"
+    >
         {isLoading ? "Submitting..." : "Add Question"}
     </button>
 </form>

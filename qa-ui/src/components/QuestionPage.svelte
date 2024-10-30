@@ -1,15 +1,19 @@
 <script>
     export let id;
-    let question = { text: "Loading...", upvotes: 0 }; // Placeholder until data is loaded
+    let question = ""; // Placeholder until data is loaded
 
-    // Fetch question data based on the ID
+    // Import Svelte's onMount lifecycle function
     import { onMount } from "svelte";
+
     onMount(async () => {
-        // Fetch question details based on `id` (replace with real API call)
-        question = { id, text: "What is Astro?", upvotes: 5 };
+        // Fetch question details based on `id`
+        const response = await fetch(`/api/courseonequestions/${id}`);
+        // Await the resolved JSON data
+        question = await response.json();
     });
 </script>
 
 <h1>Question Details</h1>
-<p>{question.text}</p>
+<p>{question.content}</p>
+<!-- Assuming 'content' is the key in the JSON -->
 <p>Upvotes: {question.upvotes}</p>

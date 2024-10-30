@@ -18,24 +18,17 @@ const PostToAi = async (data) => {
     return await response.json(); // Return the JSON response from the API
 };
 
-const PostToCourseOneQuestions = async (request) => {
+const postToCourseOneQuestions = async (request) => {
     let question;
     try {
         question = await request.json();
 
-        await questionService.postCourseOne_Questions(
+        const response = await questionService.postCourseOneQuestions(
             question.content,
             question.user_id
         );
-        return new Response(
-            JSON.stringify({ message: "Question posted successfully!" }),
-            {
-                status: 201,
-                headers: {
-                    "Content-Type": "application/json",
-                },
-            }
-        );
+        console.log("New question posted successfully.");
+        return Response.json(response);
     } catch (error) {
         console.error("Failed to post courseone question, due to: ", error);
         return new Response(JSON.stringify({ error: error.message }), {
@@ -48,7 +41,42 @@ const PostToCourseOneQuestions = async (request) => {
 };
 
 const getCourseOneQuestions = async (request) => {
-    return Response.json(await questionService.getCourseOne_Questions());
+    return Response.json(await questionService.getCourseOneQuestions());
+};
+
+const getCourseOneQuestion = async (request, urlPatternResult) => {
+    const id = urlPatternResult.pathname.groups.id;
+    console.log("id is: ", id);
+
+    try {
+        const courseOneQuestion = await questionService.getCourseOneQuestion(
+            id
+        );
+
+        return new Response(JSON.stringify(courseOneQuestion), {
+            headers: { "Content-Type": "application/json" },
+        });
+    } catch (error) {
+        console.error("Error retrieving question:", error); // Logs error details
+        return new Response("Internal Server Error", { status: 500 });
+    }
+};
+
+const putLikesToCourseOneQuestion = async (request, urlPatternResult) => {
+    const id = urlPatternResult.pathname.groups.id;
+    const reqbody = await request.json();
+    console.log("reqbody is: ", reqbody.user_id);
+    try {
+        const updatedCourseOneQuestion =
+            await questionService.putCourseOneQuestionlikes(
+                reqbody.user_id,
+                id
+            );
+
+        return Response.json(updatedCourseOneQuestion);
+    } catch (error) {
+        console.error("Error liking question:", error);
+    }
 };
 
 // Define URL mapping
@@ -67,13 +95,23 @@ const urlMapping = [
     },
     {
         method: "GET",
+        pattern: new URLPattern({ pathname: "/courseonequestions/:id" }), // Example for PostgreSQL logic
+        fn: getCourseOneQuestion,
+    },
+    {
+        method: "GET",
         pattern: new URLPattern({ pathname: "/courseonequestions" }), // Example for PostgreSQL logic
         fn: getCourseOneQuestions,
     },
     {
         method: "POST",
         pattern: new URLPattern({ pathname: "/courseonequestions" }), // Example for PostgreSQL logic
-        fn: PostToCourseOneQuestions,
+        fn: postToCourseOneQuestions,
+    },
+    {
+        method: "PUT",
+        pattern: new URLPattern({ pathname: "/courseonequestions/:id" }), // Example for PostgreSQL logic
+        fn: putLikesToCourseOneQuestion,
     },
     // Add more mappings as needed
 ];
@@ -88,7 +126,8 @@ const handleRequest = async (request) => {
         return new Response("Request not found", { status: 404 });
     }
 
-    return await mapping.fn(request); // Call the appropriate function
+    const mappingResult = mapping.pattern.exec(request.url);
+    return await mapping.fn(request, mappingResult);
 };
 
 // Server configuration
