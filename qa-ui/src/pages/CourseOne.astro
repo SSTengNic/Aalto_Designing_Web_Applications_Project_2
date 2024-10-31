@@ -1,12 +1,8 @@
 ---
+const { course_list } = Astro.params;
 import Layout from "../layout/Layout.astro";
 import QuestionsList from "../components/QuestionsList.svelte";
 import NewQuestionForm from "../components/NewQuestionForm.svelte";
 ---
 
-<Layout>
-    <h1>Course One</h1>
-
-    <NewQuestionForm client:only="svelte" />
-    <QuestionsList client:only="svelte" />
-</Layout>
+<Layout />

@@ -1,5 +1,7 @@
 <script>
-    import { userUuid, courseOneQuestions } from "../stores/stores.js";
+    export let course;
+
+    import { userUuid, courseQuestions } from "../stores/stores.js";
     let questionText = "";
     let isLoading = false;
 
@@ -13,7 +15,7 @@
         isLoading = true; // Set loading state
 
         try {
-            const response = await fetch("/api/courseonequestions", {
+            const response = await fetch("/api/coursequestions", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
@@ -21,6 +23,7 @@
                 body: JSON.stringify({
                     content: questionText,
                     user_id: $userUuid, // Correctly access the store value
+                    course: course,
                 }),
             });
 
@@ -29,10 +32,7 @@
             }
             questionText = "";
             const newQuestion = await response.json();
-            courseOneQuestions.update((questions) => [
-                newQuestion,
-                ...questions,
-            ]);
+            courseQuestions.update((questions) => [newQuestion, ...questions]);
         } catch (error) {
             console.error("Error submitting question:", error);
             alert("There was a problem submitting your question.");

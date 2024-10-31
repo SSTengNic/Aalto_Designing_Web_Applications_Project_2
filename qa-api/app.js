@@ -1,6 +1,7 @@
 import { serve } from "./deps.js";
 import * as questionService from "./services/questionService.js";
 import * as userService from "./services/userService.js";
+import * as answerService from "./services/answerService.js";
 // Function to POST data to the LLM API
 const PostToAi = async (data) => {
     const response = await fetch("http://llm-api:7000/", {
@@ -18,19 +19,21 @@ const PostToAi = async (data) => {
     return await response.json(); // Return the JSON response from the API
 };
 
-const postToCourseOneQuestions = async (request) => {
-    let question;
+const postToCourseQuestions = async (request) => {
+    let reqBody;
     try {
-        question = await request.json();
+        reqBody = await request.json();
+        console.log("reqBody: ", reqBody);
 
-        const response = await questionService.postCourseOneQuestions(
-            question.content,
-            question.user_id
+        const response = await questionService.postCourseQuestions(
+            reqBody.content,
+            reqBody.user_id,
+            reqBody.course
         );
         console.log("New question posted successfully.");
         return Response.json(response);
     } catch (error) {
-        console.error("Failed to post courseone question, due to: ", error);
+        console.error("Failed to post Course question, due to: ", error);
         return new Response(JSON.stringify({ error: error.message }), {
             status: 500,
             headers: {
@@ -40,20 +43,21 @@ const postToCourseOneQuestions = async (request) => {
     }
 };
 
-const getCourseOneQuestions = async (request) => {
-    return Response.json(await questionService.getCourseOneQuestions());
+const getCourseQuestions = async (request, urlPatternResult) => {
+    const course = urlPatternResult.pathname.groups.course;
+
+    return Response.json(await questionService.getCourseQuestions(course));
 };
 
-const getCourseOneQuestion = async (request, urlPatternResult) => {
+const getCourseQuestion = async (request, urlPatternResult) => {
     const id = urlPatternResult.pathname.groups.id;
     console.log("id is: ", id);
+    const reqBody = await request.json();
 
     try {
-        const courseOneQuestion = await questionService.getCourseOneQuestion(
-            id
-        );
+        const CourseQuestion = await questionService.getCourseQuestion(id);
 
-        return new Response(JSON.stringify(courseOneQuestion), {
+        return new Response(JSON.stringify(CourseQuestion), {
             headers: { "Content-Type": "application/json" },
         });
     } catch (error) {
@@ -62,21 +66,23 @@ const getCourseOneQuestion = async (request, urlPatternResult) => {
     }
 };
 
-const putLikesToCourseOneQuestion = async (request, urlPatternResult) => {
+const putLikesToCourseQuestion = async (request, urlPatternResult) => {
     const id = urlPatternResult.pathname.groups.id;
     const reqbody = await request.json();
     try {
-        const updatedCourseOneQuestion =
-            await questionService.putCourseOneQuestionlikes(
+        const updatedCourseQuestion =
+            await questionService.putCourseQuestionlikes(
                 reqbody.user_id,
                 reqbody.question_id
             );
 
-        return Response.json(updatedCourseOneQuestion);
+        return Response.json(updatedCourseQuestion);
     } catch (error) {
         console.error("Error liking question:", error);
     }
 };
+
+//--------------------------------------------------------------------------
 
 const postUser = async (request) => {
     let receivedUser;
@@ -104,6 +110,33 @@ const postUser = async (request) => {
         }
     }
 };
+//--------------------------------------------------------------------------
+const getAnswers = async (request) => {
+    const reqBody = await request.json();
+    //If i want this, i need the question_id right
+    console.log("reqBody: ", reqBody);
+    return Response.json(await answerService.getAnswers(reqBody.question_id));
+};
+
+const postAnswer = async (request) => {
+    try {
+        const reqBody = await request.json();
+        console.log("reqBody: ", reqBody);
+        const response = await answerService.postAnswer(
+            reqBody.course,
+            reqBody.content,
+            reqBody.user_id,
+            reqBody.question_id
+        );
+        return Response.json(response);
+    } catch (error) {
+        console.error("Failed to post user, due to: ", error);
+        return new Response(JSON.stringify({ error: error.message }), {
+            status: 500,
+            headers: { "Content-Type": "application/json" },
+        });
+    }
+};
 
 // Define URL mapping
 const urlMapping = [
@@ -121,8 +154,8 @@ const urlMapping = [
     },
     {
         method: "GET",
-        pattern: new URLPattern({ pathname: "/courseonequestions/:id" }), // Example for PostgreSQL logic
-        fn: getCourseOneQuestion,
+        pattern: new URLPattern({ pathname: "/coursequestions/:course/:id" }), // Example for PostgreSQL logic
+        fn: getCourseQuestion,
     },
     {
         method: "POST",
@@ -132,19 +165,30 @@ const urlMapping = [
 
     {
         method: "GET",
-        pattern: new URLPattern({ pathname: "/courseonequestions" }), // Example for PostgreSQL logic
-        fn: getCourseOneQuestions,
+        pattern: new URLPattern({ pathname: "/coursequestions/:course" }), // Example for PostgreSQL logic
+        fn: getCourseQuestions,
     },
     {
         method: "POST",
-        pattern: new URLPattern({ pathname: "/courseonequestions" }), // Example for PostgreSQL logic
-        fn: postToCourseOneQuestions,
+        pattern: new URLPattern({ pathname: "/coursequestions" }), // Example for PostgreSQL logic
+        fn: postToCourseQuestions,
     },
     {
         method: "PUT",
-        pattern: new URLPattern({ pathname: "/courseonequestions/:id" }), // Example for PostgreSQL logic
-        fn: putLikesToCourseOneQuestion,
+        pattern: new URLPattern({ pathname: "/coursequestions/:id" }), // Example for PostgreSQL logic
+        fn: putLikesToCourseQuestion,
     },
+    {
+        method: "GET",
+        pattern: new URLPattern({ pathname: "/answers" }), // Example for PostgreSQL logic
+        fn: getAnswers,
+    },
+    {
+        method: "POST",
+        pattern: new URLPattern({ pathname: "/answers" }), // Example for PostgreSQL logic
+        fn: postAnswer,
+    },
+
     // Add more mappings as needed
 ];
 

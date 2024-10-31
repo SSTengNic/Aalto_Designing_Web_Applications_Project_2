@@ -2,18 +2,12 @@
 import Layout from "../layout/Layout.astro";
 import TestButton from "../components/TestButton.svelte";
 import UserInserter from "../components/UserInserter.svelte";
+import CoursePage from "../components/CoursePage.svelte";
 ---
 
 <Layout>
     <UserInserter client:only={"svelte"} />
     <TestButton client:only={"svelte"} />
 
-    <ul>
-        <li>
-            <a href="/CourseOne">Course One</a>
-        </li>
-        <li>
-            <a href="/CourseTeo">Course Two</a>
-        </li>
-    </ul>
+    <CoursePage client:only={"svelte"} />
 </Layout>

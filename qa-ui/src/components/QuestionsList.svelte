@@ -1,27 +1,29 @@
 <script>
+    export let course;
+
     import { userUuid } from "../stores/stores";
 
     import { onMount } from "svelte";
-    import { courseOneQuestions } from "../stores/stores";
+    import { courseQuestions } from "../stores/stores";
 
     // Fetch all questions on component load
-    const getAllCourseOneQuestions = async () => {
+    const getAllCourseQuestions = async () => {
         try {
-            const response = await fetch("/api/courseonequestions");
+            const response = await fetch(`/api/coursequestions/${course}`);
             const questions = await response.json();
-            courseOneQuestions.set(questions);
+            courseQuestions.set(questions);
         } catch (error) {
             console.error("Error fetching questions:", error);
         }
     };
 
     onMount(() => {
-        getAllCourseOneQuestions();
+        getAllCourseQuestions();
     });
 
     const upvoteQuestion = async (id) => {
         try {
-            const response = await fetch(`/api/courseonequestions/${id}`, {
+            const response = await fetch(`/api/coursequestions/${id}`, {
                 method: "PUT",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ user_id: $userUuid, question_id: id }),
@@ -30,7 +32,7 @@
 
             const updatedQuestion = await response.json();
             // Update only the upvoted question in the local list
-            courseOneQuestions.update((questions) => {
+            courseQuestions.update((questions) => {
                 const updatedList = questions.map((q) =>
                     q.id === id ? updatedQuestion : q
                 );
@@ -61,8 +63,8 @@
 </script>
 
 <ul>
-    {#if $courseOneQuestions.length > 0}
-        {#each $courseOneQuestions as question (question.id)}
+    {#if $courseQuestions.length > 0}
+        {#each $courseQuestions as question (question.id)}
             <li>
                 <p>{question.content}</p>
                 <p>Upvotes: {question.upvotes}</p>

@@ -8,4 +8,4 @@ if (!user) {
 }
 
 export const userUuid = readable(user);
-export const courseOneQuestions = writable([]);
+export const courseQuestions = writable([]);
