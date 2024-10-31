@@ -52,7 +52,6 @@ const getCourseQuestions = async (request, urlPatternResult) => {
 const getCourseQuestion = async (request, urlPatternResult) => {
     const id = urlPatternResult.pathname.groups.id;
     console.log("id is: ", id);
-    const reqBody = await request.json();
 
     try {
         const CourseQuestion = await questionService.getCourseQuestion(id);
@@ -111,11 +110,10 @@ const postUser = async (request) => {
     }
 };
 //--------------------------------------------------------------------------
-const getAnswers = async (request) => {
-    const reqBody = await request.json();
+const getAnswers = async (request, urlPatternResult) => {
+    const id = urlPatternResult.pathname.groups.id;
     //If i want this, i need the question_id right
-    console.log("reqBody: ", reqBody);
-    return Response.json(await answerService.getAnswers(reqBody.question_id));
+    return Response.json(await answerService.getAnswers(id));
 };
 
 const postAnswer = async (request) => {
@@ -138,6 +136,21 @@ const postAnswer = async (request) => {
     }
 };
 
+const putLikesAnswer = async (request) => {
+    const reqBody = await request.json();
+    console.log("putLikesAnswer, reqBody: ", reqBody);
+    try {
+        const updatedAnswer = await answerService.putLikesAnswer(
+            reqBody.user_id,
+            reqBody.answer_id
+        );
+
+        return Response.json(updatedAnswer);
+    } catch (error) {
+        console.error("Error liking answer: ", error);
+    }
+};
+
 // Define URL mapping
 const urlMapping = [
     {
@@ -154,7 +167,7 @@ const urlMapping = [
     },
     {
         method: "GET",
-        pattern: new URLPattern({ pathname: "/coursequestions/:course/:id" }), // Example for PostgreSQL logic
+        pattern: new URLPattern({ pathname: "/coursequestions/:id" }), // Example for PostgreSQL logic
         fn: getCourseQuestion,
     },
     {
@@ -180,13 +193,18 @@ const urlMapping = [
     },
     {
         method: "GET",
-        pattern: new URLPattern({ pathname: "/answers" }), // Example for PostgreSQL logic
+        pattern: new URLPattern({ pathname: "/answers/:id" }), // Example for PostgreSQL logic
         fn: getAnswers,
     },
     {
         method: "POST",
         pattern: new URLPattern({ pathname: "/answers" }), // Example for PostgreSQL logic
         fn: postAnswer,
+    },
+    {
+        method: "PUT",
+        pattern: new URLPattern({ pathname: "/answers" }), // Example for PostgreSQL logic
+        fn: putLikesAnswer,
     },
 
     // Add more mappings as needed

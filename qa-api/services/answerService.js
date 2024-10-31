@@ -22,7 +22,7 @@ const postAnswer = async (course, content, user_id, question_id) => {
     return insertedAnswer[0];
 };
 
-const putAnswerlikes = async (user_id, answer_id) => {
+const putLikesAnswer = async (user_id, answer_id) => {
     try {
         console.log("id: ", user_id);
         console.log("answer_id: ", answer_id);
@@ -48,4 +48,4 @@ const putAnswerlikes = async (user_id, answer_id) => {
     }
 };
 
-export { getAnswers, postAnswer, putAnswerlikes };
+export { getAnswers, postAnswer, putLikesAnswer };

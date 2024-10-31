@@ -4,7 +4,8 @@
     import { userUuid } from "../stores/stores";
 
     import { onMount } from "svelte";
-    import { courseQuestions } from "../stores/stores";
+
+    let courseQuestions = [];
 
     // Fetch all questions on component load
     const getAllCourseQuestions = async () => {
@@ -32,26 +33,22 @@
 
             const updatedQuestion = await response.json();
             // Update only the upvoted question in the local list
-            courseQuestions.update((questions) => {
-                const updatedList = questions.map((q) =>
-                    q.id === id ? updatedQuestion : q
-                );
-
-                // Sort by most recent activity (creation or upvote time)
-                updatedList.sort(
-                    (a, b) =>
-                        Math.max(
-                            new Date(b.created_at),
-                            new Date(b.last_upvoted_at)
-                        ) -
-                        Math.max(
-                            new Date(a.created_at),
-                            new Date(a.last_upvoted_at)
-                        )
-                );
-
-                return updatedList;
+            courseQuestions = courseQuestions.map((q) => {
+                q.id = id ? updatedQuestion : q;
             });
+
+            // Sort by most recent activity (creation or upvote time)
+            courseQuestions.sort(
+                (a, b) =>
+                    Math.max(
+                        new Date(b.created_at),
+                        new Date(b.last_upvoted_at)
+                    ) -
+                    Math.max(
+                        new Date(a.created_at),
+                        new Date(a.last_upvoted_at)
+                    )
+            );
         } catch (error) {
             console.error("Error liking question:", error);
         }

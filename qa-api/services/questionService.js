@@ -18,7 +18,8 @@ const getCourseQuestions = async (course) => {
 
 //Maybe make it search for both the id and the course
 const getCourseQuestion = async (id) => {
-    const question = await sql`SELECT * FROM course_questions WHERE id = ${id}`;
+    const question =
+        await sql`SELECT * FROM course_questions WHERE id = ${id};`;
     return question[0];
 };
 
@@ -35,11 +36,11 @@ const postCourseQuestions = async (content, user_id, course) => {
 const putCourseQuestionlikes = async (user_id, question_id) => {
     try {
         const likeExists = await sql`
-        SELECT * FROM  question_likes_checker WHERE user_id = ${user_id} AND question_id = ${question_id}`;
+        SELECT * FROM  question_likes_checker WHERE user_id = ${user_id} AND question_id = ${question_id};`;
 
         if (likeExists.length === 0) {
             await sql`
-            INSERT INTO question_likes_checker (user_id,question_id) VALUES (${user_id},${question_id})`;
+            INSERT INTO question_likes_checker (user_id,question_id) VALUES (${user_id},${question_id});`;
             const updatedCourseQuestion = await sql`
             UPDATE course_questions
             SET 
