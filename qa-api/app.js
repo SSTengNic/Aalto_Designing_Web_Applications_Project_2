@@ -1,6 +1,6 @@
 import { serve } from "./deps.js";
 import * as questionService from "./services/questionService.js";
-
+import * as userService from "./services/userService.js";
 // Function to POST data to the LLM API
 const PostToAi = async (data) => {
     const response = await fetch("http://llm-api:7000/", {
@@ -65,17 +65,43 @@ const getCourseOneQuestion = async (request, urlPatternResult) => {
 const putLikesToCourseOneQuestion = async (request, urlPatternResult) => {
     const id = urlPatternResult.pathname.groups.id;
     const reqbody = await request.json();
-    console.log("reqbody is: ", reqbody.user_id);
     try {
         const updatedCourseOneQuestion =
             await questionService.putCourseOneQuestionlikes(
                 reqbody.user_id,
-                id
+                reqbody.question_id
             );
 
         return Response.json(updatedCourseOneQuestion);
     } catch (error) {
         console.error("Error liking question:", error);
+    }
+};
+
+const postUser = async (request) => {
+    let receivedUser;
+    try {
+        receivedUser = await request.json();
+        console.log("app, putLikes: ", receivedUser);
+
+        const response = await userService.postUser(receivedUser.user_id);
+        console.log("user posted successfully.");
+        return Response.json(response);
+    } catch (error) {
+        if (error.code === "23505") {
+            // PostgreSQL error code for unique violation
+            console.error("User already exists.");
+            return new Response(
+                JSON.stringify({ error: "User already exists" }),
+                { status: 409, headers: { "Content-Type": "application/json" } }
+            );
+        } else {
+            console.error("Failed to post user, due to: ", error);
+            return new Response(JSON.stringify({ error: error.message }), {
+                status: 500,
+                headers: { "Content-Type": "application/json" },
+            });
+        }
     }
 };
 
@@ -98,6 +124,12 @@ const urlMapping = [
         pattern: new URLPattern({ pathname: "/courseonequestions/:id" }), // Example for PostgreSQL logic
         fn: getCourseOneQuestion,
     },
+    {
+        method: "POST",
+        pattern: new URLPattern({ pathname: "/users" }), // Example for PostgreSQL logic
+        fn: postUser,
+    },
+
     {
         method: "GET",
         pattern: new URLPattern({ pathname: "/courseonequestions" }), // Example for PostgreSQL logic

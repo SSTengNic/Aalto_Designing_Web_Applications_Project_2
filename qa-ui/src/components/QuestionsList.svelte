@@ -24,7 +24,7 @@
             const response = await fetch(`/api/courseonequestions/${id}`, {
                 method: "PUT",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ user_id: userUuid }),
+                body: JSON.stringify({ user_id: $userUuid, question_id: id }),
             });
             if (!response.ok) throw new Error("Failed to like question.");
 

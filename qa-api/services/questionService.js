@@ -24,21 +24,23 @@ const getCourseOneQuestion = async (id) => {
     return question[0];
 };
 
-const putCourseOneQuestionlikes = async (id, question_id) => {
+const putCourseOneQuestionlikes = async (user_id, question_id) => {
     try {
+        console.log("id: ", user_id);
+        console.log("question_id: ", question_id);
         const likeExists = await sql`
-        SELECT * FROM  question_likes_checker WHERE user_id = ${id} AND question_id = ${question_id}`;
+        SELECT * FROM  question_likes_checker WHERE user_id = ${user_id} AND question_id = ${question_id}`;
 
         if (likeExists.length === 0) {
             await sql`
-            INSERT INTO question_likes_checker (user_id,question_id) VALUES (${id},${question_id})`;
+            INSERT INTO question_likes_checker (user_id,question_id) VALUES (${user_id},${question_id})`;
             const updatedCourseOneQuestion = await sql`
             UPDATE courseone_questions
             SET 
                upvotes = upvotes + 1,
                last_upvoted_at = NOW()
             WHERE 
-                id = ${id} 
+                id = ${question_id} 
             RETURNING *;
         `;
             return updatedCourseOneQuestion[0];
