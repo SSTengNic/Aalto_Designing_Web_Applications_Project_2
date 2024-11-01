@@ -9,3 +9,4 @@ if (!user) {
 
 export const userUuid = readable(user);
 export const courseQuestions = writable([]);
+export const questionAnswers = writable([]);
