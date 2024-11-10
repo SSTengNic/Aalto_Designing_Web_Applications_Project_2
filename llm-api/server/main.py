@@ -10,4 +10,4 @@ async def main():
 @app.post("/")
 async def ask_question(request: Request):
     data = await request.json()
-    return generator(data["question"])
+    return generator(data["question"], max_new_tokens=50)

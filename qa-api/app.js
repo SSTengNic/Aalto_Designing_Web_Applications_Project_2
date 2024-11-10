@@ -3,20 +3,82 @@ import * as questionService from "./services/questionService.js";
 import * as userService from "./services/userService.js";
 import * as answerService from "./services/answerService.js";
 // Function to POST data to the LLM API
-const PostToAi = async (data) => {
-    const response = await fetch("http://llm-api:7000/", {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-        },
-        body: JSON.stringify(data),
-    });
 
-    if (!response.ok) {
-        throw new Error("Failed to fetch from LLM API");
+const webSocketClients = new Set();
+
+// const PostToAi = async (data) => {
+//     const response = await fetch("http://llm-api:7000/", {
+//         method: "POST",
+//         headers: {
+//             "Content-Type": "application/json",
+//         },
+//         body: JSON.stringify(data),
+//     });
+
+//     if (!response.ok) {
+//         throw new Error("Failed to fetch from LLM API");
+//     }
+
+//     return await response.json(); // Return the JSON response from the API
+// };
+const generateAiAnswers = async (
+    questionContent,
+    questionId,
+    course,
+    userId
+) => {
+    try {
+        // Step 1: Request answers from the AI model
+
+        for (let i = 0; i < 3; i++) {
+            const aiResponse = await getAiAnswer({ question: questionContent });
+            console.log("AI Response received:", aiResponse);
+            const aiPostResponse = await answerService.postAnswer(
+                course,
+                aiResponse[0].generated_text, // The AI-generated answer text
+                userId,
+                questionId
+            );
+
+            webSocketClients.forEach((socket) => {
+                // Send a message containing the AI-generated answers
+                socket.send(
+                    JSON.stringify({
+                        type: "AI_ANSWER_READY",
+                        questionId,
+                        answers: aiResponse, // Send the answers to the clients
+                    })
+                );
+            });
+            console.log("AI answers posted and WebSocket notification sent.");
+        }
+    } catch (error) {
+        console.error("Failed to generate AI answers:", error);
     }
+};
 
-    return await response.json(); // Return the JSON response from the API
+const getAiAnswer = async (data) => {
+    let reqBody;
+
+    try {
+        const response = await fetch("http://llm-api:7000/", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify(data),
+        });
+        const jsonData = await response.json();
+        return jsonData;
+    } catch (error) {
+        console.error("Failed to post Course question, due to: ", error);
+        return new Response(JSON.stringify({ error: error.message }), {
+            status: 500,
+            headers: {
+                "Content-Type": "application/json",
+            },
+        });
+    }
 };
 
 const postToCourseQuestions = async (request) => {
@@ -31,6 +93,15 @@ const postToCourseQuestions = async (request) => {
             reqBody.course
         );
         console.log("New question posted successfully.");
+
+        //Doing this so that i dont block the posting of the question response.
+        generateAiAnswers(
+            reqBody.content,
+            response.id,
+            reqBody.course,
+            reqBody.user_id
+        );
+
         return Response.json(response);
     } catch (error) {
         console.error("Failed to post Course question, due to: ", error);
@@ -119,7 +190,7 @@ const getAnswers = async (request, urlPatternResult) => {
 const postAnswer = async (request) => {
     try {
         const reqBody = await request.json();
-        console.log("reqBody: ", reqBody);
+        console.log("postAnswer, reqBody: ", reqBody);
         const response = await answerService.postAnswer(
             reqBody.course,
             reqBody.content,
@@ -151,6 +222,34 @@ const putLikesAnswer = async (request) => {
     }
 };
 
+const handleWebSocket = async (request) => {
+    const { socket, response } = Deno.upgradeWebSocket(request);
+
+    // Store the WebSocket connection
+    webSocketClients.add(socket);
+
+    socket.onopen = () => {
+        console.log("WebSocket connection openedss");
+    };
+
+    let interval = setInterval(() => {
+        if (socket.readyState === WebSocket.OPEN) {
+            socket.send("ping");
+        }
+    }, 5000);
+
+    socket.onmessage = (event) => {
+        console.log("Received message:", event.data);
+        // Handle incoming messages as needed
+    };
+
+    socket.onclose = () => {
+        console.log("WebSocket connection closed");
+        webSocketClients.delete(socket);
+    };
+
+    return response; // Return the WebSocket upgrade response
+};
 // Define URL mapping
 const urlMapping = [
     {
@@ -158,7 +257,7 @@ const urlMapping = [
         pattern: new URLPattern({ pathname: "/ai" }), // Endpoint for LLM API
         fn: async (request) => {
             const data = await request.json(); // Parse incoming request data
-            const aiResponse = await PostToAi(data); // Call the AI function
+            const aiResponse = await getAiAnswer(data); // Call the AI function
             return new Response(JSON.stringify(aiResponse), {
                 status: 200,
                 headers: { "Content-Type": "application/json" },
@@ -167,8 +266,13 @@ const urlMapping = [
     },
     {
         method: "GET",
-        pattern: new URLPattern({ pathname: "/coursequestions/:id" }), // Example for PostgreSQL logic
+        pattern: new URLPattern({ pathname: "/coursequestions/:course/:id" }), // Example for PostgreSQL logic
         fn: getCourseQuestion,
+    },
+    {
+        method: "GET",
+        pattern: new URLPattern({ pathname: "/ws" }), // WebSocket route
+        fn: handleWebSocket,
     },
     {
         method: "POST",
@@ -212,6 +316,9 @@ const urlMapping = [
 
 // Main request handler
 const handleRequest = async (request) => {
+    if (request.url === "/ws" && request.method === "GET") {
+        return await handleWebSocket(request);
+    }
     const mapping = urlMapping.find(
         (um) => um.method === request.method && um.pattern.test(request.url)
     );

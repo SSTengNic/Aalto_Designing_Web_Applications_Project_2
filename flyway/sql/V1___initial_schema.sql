@@ -33,6 +33,7 @@ CREATE TABLE answers (
     content TEXT NOT NULL,
     upvotes INTEGER DEFAULT 0 NOT NULL,
     user_id TEXT NOT NULL,
+    is_ai_generated BOOLEAN DEFAULT FALSE NOT NULL,
     question_id INT REFERENCES course_questions(id),
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL,
     last_upvoted_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL
